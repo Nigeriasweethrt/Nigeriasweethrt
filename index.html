@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Happy Birthday Chidera</title>
+
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;800&family=Great+Vibes&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --bg1: #ffd4e6;
+    --bg2: #ffd1a9;
+    --accent: #ff6b9f;
+    --muted: rgba(255,255,255,0.85);
+    --card: rgba(255,255,255,0.08);
+    --glass: rgba(255,255,255,0.12);
+  }
+
+  html,body { height:100%; margin:0; font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
+
+  body {
+    background: radial-gradient(1200px 600px at 10% 10%, rgba(255,255,255,0.12), transparent),
+                linear-gradient(135deg, var(--bg1), var(--bg2));
+    overflow: hidden;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color: #222;
+  }
+
+  /* full-screen canvases (fireworks + confetti) */
+  canvas#fx, canvas#confetti {
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    z-index: 5;
+  }
+
+  .stage {
+    position: relative;
+    z-index: 10;
+    width: min(930px, 92vw);
+    max-width: 1100px;
+    min-height: 560px;
+    border-radius: 20px;
+    padding: 36px;
+    box-sizing: border-box;
+    background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.06));
+    box-shadow: 0 10px 40px rgba(16,16,40,0.12), inset 0 1px 0 rgba(255,255,255,0.03);
+    backdrop-filter: blur(8px) saturate(1.05);
+    overflow: hidden;
+    display:flex;
+    gap:28px;
+    align-items:center;
+  }
+
+  /* left: big message */
+  .left {
+    flex: 1;
+    min-width: 300px;
+  }
+
+  .title {
+    font-family: "Great Vibes", cursive;
+    font-size: clamp(40px, 6vw, 72px);
+    color: white;
+    line-height: 0.9;
+    text-shadow: 0 6px 30px rgba(255,107,159,0.25), 0 2px 8px rgba(0,0,0,0.15);
+    margin: 6px 0;
+    transform-origin: center;
+    opacity:0;
+    animation: titleIn 1.2s cubic-bezier(.2,.9,.2,1) forwards;
+  }
+
+  @keyframes titleIn {
+    from { transform: translateY(20px) scale(0.96); opacity:0; filter:blur(6px); }
+    to   { transform: translateY(0) scale(1); opacity:1; filter:blur(0); }
+  }
+
+  .subtitle {
+    color: var(--muted);
+    margin: 6px 0 18px 0;
+    font-size: clamp(14px, 1.6vw, 18px);
+    opacity:0;
+    transform: translateY(8px);
+    animation: subIn 1s ease 0.5s forwards;
+  }
+
+  @keyframes subIn {
+    to { transform:none; opacity:1; }
+  }
+
+  .actions { display:flex; gap:12px; margin-top:18px; opacity:0; animation: subIn 1s ease 0.9s forwards; }
+
+  .btn {
+    padding: 10px 18px;
+    border-radius: 999px;
+    border: none;
+    cursor:pointer;
+    font-weight:700;
+    box-shadow: 0 6px 20px rgba(255,107,159,0.12);
+    transition: transform .18s ease, box-shadow .18s ease;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary {
+    background: linear-gradient(90deg, #ff8ab3, #ff6b9f);
+    color: white;
+  }
+  .btn-ghost {
+    background: transparent;
+    color: white;
+    border: 1px solid rgba(255,255,255,0.12);
+  }
+
+  /* right: flower garden preview */
+  .right {
+    width: 360px;
+    flex-shrink:0;
+    height: 440px;
+    border-radius: 14px;
+    padding: 18px;
+    box-sizing: border-box;
+    background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:flex-start;
+    gap:12px;
+    position:relative;
+    overflow:visible;
+  }
+
+  .garden {
+    position:relative;
+    width:100%;
+    height:340px;
+    border-radius:10px;
+    overflow: visible;
+    background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+    display:flex;
+    align-items:end;
+    justify-content:center;
+  }
+
+  .ground {
+    position:absolute;
+    bottom:0;
+    width:100%;
+    height:64px;
+    left:0;
+    background: linear-gradient(90deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+    border-top-left-radius: 40% 20%;
+    border-top-right-radius: 40% 20%;
+  }
+
+  /* flower base (hidden; flowers are DOM elements created by JS) */
+  .flower {
+    position:absolute;
+    transform-origin: center;
+    will-change: transform, opacity;
+    pointer-events: none;
+    z-index: 12;
+    filter: drop-shadow(0 8px 16px rgba(0,0,0,0.18));
+  }
+
+  /* bloom animation (scale up quickly, then float) */
+  @keyframes bloom {
+    0% { transform: translateY(12px) scale(0.1) rotate(-10deg); opacity:0; }
+    35% { transform: translateY(0) scale(1.12) rotate(6deg); opacity:1; }
+    100% { transform: translateY(-120vh) scale(0.9) rotate(360deg); opacity:0; }
+  }
+
+  /* secret note */
+  .note {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 26px;
+    width: calc(100% - 56px);
+    padding: 14px 16px;
+    border-radius: 12px;
+    text-align:center;
+    background: linear-gradient(90deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+    color: white;
+    box-shadow: 0 12px 30px rgba(14, 12, 40, 0.18);
+    opacity:0;
+    transform-origin: bottom center;
+    pointer-events: none;
+  }
+
+  .note.show {
+    animation: noteIn .6s cubic-bezier(.2,.9,.2,1) forwards;
+  }
+  @keyframes noteIn {
+    from { transform: translateX(-50%) translateY(12px) scale(.96); opacity:0; }
+    to { transform: translateX(-50%) translateY(0) scale(1); opacity:1; }
+  }
+
+  /* smaller helper text */
+  .small {
+    color: var(--muted);
+    font-size:13px;
+    text-align:center;
+  }
+
+  /* floating petals (initial decorative petals) */
+  .petal-deco {
+    position:absolute;
+    top: -20%;
+    left: -10%;
+    width: 260px;
+    height: 260px;
+    background: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.08), transparent 20%),
+                radial-gradient(circle at 80% 80%, rgba(255,255,255,0.04), transparent 20%);
+    opacity:0.8;
+    transform: rotate(12deg);
+    z-index:6;
+    pointer-events:none;
+  }
+
+  /* responsive */
+  @media (max-width:880px) {
+    .stage { flex-direction:column; padding:22px; min-height:640px; gap:18px; }
+    .right { width:100%; height:360px; max-width:760px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- canvases for fireworks + confetti -->
+<canvas id="fx"></canvas>
+<canvas id="confetti"></canvas>
+
+<div class="stage" role="main" aria-live="polite" aria-label="Birthday surprise">
+  <div class="left">
+    <div class="title">Happy Birthday, <span style="color: #fff; text-shadow: 0 8px 30px rgba(255,107,159,0.35);">Chidera</span> 🌸</div>
+    <div class="subtitle">A little garden of flowers, fireworks, and a secret just for you — click the gift when you're ready ✨</div>
+
+    <div class="actions" aria-hidden="false">
+      <button class="btn btn-primary" id="giftBtn" aria-label="Open gift">🎁 Click me</button>
+      <button class="btn btn-ghost" id="playMusic" aria-label="Play music">🔊 Play music</button>
+    </div>
+
+    <div style="margin-top:18px" class="small">Tip: Click the button to reveal a message & confetti. This was made with ❤️</div>
+  </div>
+
+  <div class="right" aria-hidden="false">
+    <div class="garden" id="garden" aria-hidden="true">
+      <div class="petal-deco" aria-hidden="true"></div>
+      <div class="ground" aria-hidden="true"></div>
+      <!-- flowers will be generated here by JavaScript -->
+    </div>
+
+    <div class="note" id="note" role="region" aria-live="polite">
+      <div style="font-size:16px;font-weight:700;margin-bottom:8px">To my favorite person — Frienemy</div>
+      <div style="font-size:14px;color:var(--muted);line-height:1.4">
+        You light up my days, and my world is brighter with you in it. Wishing you endless smiles and the happiest birthday. 💖
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- hidden audio (optional) -->
+<audio id="music" loop>
+  <!-- Use a short instrumental or upload your own file and update the src -->
+  <source src="The-Neighbourhood-Sweater-Weather.mp3" type="audio/mpeg">
+  <!-- If autoplay is blocked, user can press Play -->
+</audio>
+
+
+
+<script>
+/* ---------------------------
+   Helper: responsive canvases
+   --------------------------- */
+function fitCanvas(c){
+  c.width = innerWidth * devicePixelRatio;
+  c.height = innerHeight * devicePixelRatio;
+  c.style.width = innerWidth + 'px';
+  c.style.height = innerHeight + 'px';
+  c.getContext('2d').setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+}
+const fx = document.getElementById('fx');
+const conf = document.getElementById('confetti');
+fitCanvas(fx);
+fitCanvas(conf);
+addEventListener('resize', ()=>{ fitCanvas(fx); fitCanvas(conf); });
+
+/* ---------------------------
+   Flowers: generate pretty SVG flowers that bloom and float up
+   --------------------------- */
+const garden = document.getElementById('garden');
+
+const flowerSvgs = [
+  // small rose-like
+  `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><g fill="none" stroke="none"><circle cx="32" cy="32" r="30" fill="none"/></g><g transform="translate(6,6)"><path d="M22 4c5 0 10 3 11 6 1 3-2 6-4 7 3 1 6 4 5 7-1 2-5 3-8 2 2 2 3 6 1 8-3 3-10 1-12-2-2 3-9 5-12 2-3-3-1-9 1-12-3 1-6 0-8-2-2-3 2-6 5-7-2-1-5-4-4-7 1-3 6-6 11-6 4 0 6 2 8 3 2-1 5-3 9-3z" fill="#ff6480"/></g></svg>`,
+
+  // cherry blossom
+  `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><g transform="translate(6,6)"><path d="M20 4c3 0 5 1 7 3 1 1 3 1 4 0 1-2 4-3 7-3 3 0 6 3 6 6 0 3-2 5-2 7 0 2 2 4 2 7 0 3-3 6-6 6-3 0-5-2-7-2-2 0-4 2-7 2-3 0-6-3-6-6 0-3 2-5 2-7 0-2-2-4-2-7 0-3 3-6 6-6z" fill="#ffb6d5"/><circle cx="18" cy="18" r="3" fill="#ff809e"/></g></svg>`,
+
+  // daisy
+  `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><g transform="translate(6,6)"><circle cx="26" cy="26" r="8" fill="#ffd86b"/><g fill="#fff"><path d="M26 2 L28 12 L36 6 L30 16 L40 16 L30 20 L36 30 L26 24 L16 30 L22 20 L12 16 L22 16 L16 6 L24 12 Z"/></g></g></svg>`
+];
+
+function createFlowerBurst(count = 1, x=null, y=null){
+  for(let i=0;i<count;i++){
+    const f = document.createElement('div');
+    f.className = 'flower';
+    const size = 40 + Math.random()*70;
+    f.style.width = size + 'px';
+    f.style.height = size + 'px';
+
+    // pick svg
+    const svg = flowerSvgs[Math.floor(Math.random()*flowerSvgs.length)];
+    f.innerHTML = svg;
+    // position near bottom of garden or at given pos
+    const rect = garden.getBoundingClientRect();
+    const startX = (x !== null) ? x : (rect.left + 40 + Math.random()*(rect.width-80));
+    const startY = (y !== null) ? y : (rect.bottom - 40 + (Math.random()*10));
+    f.style.left = (startX - rect.left - size/2) + 'px';
+    f.style.top = (startY - rect.top - size/2) + 'px';
+
+    // random rotation
+    const rot = (-30 + Math.random()*60);
+    f.style.transform = `rotate(${rot}deg) scale(.08)`;
+    // animation duration
+    const dur = 4 + Math.random()*4;
+    f.style.animation = `bloom ${dur}s cubic-bezier(.2,.9,.2,1) forwards`;
+    // stagger delay slightly
+    f.style.animationDelay = (Math.random()*0.45) + 's';
+
+    garden.appendChild(f);
+
+    // remove after animation
+    setTimeout(()=> f.remove(), (dur + 0.6)*1000);
+  }
+}
+
+// initial bloom burst on load (gentle)
+setTimeout(()=> {
+  for(let i=0;i<12;i++){
+    setTimeout(()=> createFlowerBurst(1), i*140);
+  }
+}, 260);
+
+/* gentle continuous flowers */
+setInterval(()=> {
+  // 30% chance to create a flower
+  if(Math.random() < 0.6) createFlowerBurst(1);
+}, 700);
+
+
+/* ---------------------------
+   Fireworks: canvas particle system
+   --------------------------- */
+const ctx = fx.getContext('2d');
+let fireworks = [];
+
+class Firework {
+  constructor(x, y, hue){
+    this.x = x; this.y = y; this.hue = hue;
+    this.particles = [];
+    this.alive = true;
+    this.createParticles();
+  }
+  createParticles(){
+    const count = 18 + Math.floor(Math.random()*18);
+    for(let i=0;i<count;i++){
+      const angle = Math.random()*Math.PI*2;
+      const speed = 1 + Math.random()*3.8;
+      this.particles.push({
+        x: this.x,
+        y: this.y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life: 60 + Math.floor(Math.random()*40),
+        hue: this.hue + (Math.random()*30-15)
+      });
+    }
+  }
+  update(){
+    this.particles.forEach(p=>{
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.04; // gravity
+      p.vx *= 0.99; p.vy *= 0.995;
+      p.life--;
+    });
+    this.particles = this.particles.filter(p=> p.life>0);
+    if(this.particles.length===0) this.alive=false;
+  }
+  draw(ctx){
+    this.particles.forEach(p=>{
+      ctx.beginPath();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.fillStyle = `hsla(${p.hue}, 90%, 60%, ${Math.max(0.02, p.life/80)})`;
+      ctx.arc(p.x, p.y, Math.max(0.9, Math.min(3.6, p.life/20)), 0, Math.PI*2);
+      ctx.fill();
+    });
+  }
+}
+
+function launchFirework(){
+  const x = Math.random()*innerWidth * 0.8 + innerWidth*0.1;
+  const y = Math.random()*innerHeight*0.45 + innerHeight*0.12;
+  const hue = Math.floor(Math.random()*360);
+  fireworks.push(new Firework(x, y, hue));
+}
+
+// create a show: periodic fireworks
+let fireworkInterval = null;
+function startFireworksShow(){
+  if(fireworkInterval) return;
+  // launch a cluster
+  fireworkInterval = setInterval(()=>{
+    for(let i=0;i<2;i++){
+      setTimeout(()=> launchFirework(), i*220);
+    }
+  }, 700);
+  // also launch a few random extra pops
+  setTimeout(()=> { for(let i=0;i<6;i++) setTimeout(launchFirework, i*220); }, 60);
+}
+
+function stopFireworksShow(){
+  clearInterval(fireworkInterval); fireworkInterval = null;
+}
+
+function animateFx(){
+  ctx.clearRect(0,0,fx.width,fx.height);
+  for(let i=fireworks.length-1;i>=0;i--){
+    fireworks[i].update();
+    fireworks[i].draw(ctx);
+    if(!fireworks[i].alive) fireworks.splice(i,1);
+  }
+  requestAnimationFrame(animateFx);
+}
+animateFx();
+
+/* ---------------------------
+   Confetti: simple rectangles on canvas
+   --------------------------- */
+const cctx = conf.getContext('2d');
+let confettiPieces = [];
+
+function confettiBurst(x, y, count = 80){
+  for(let i=0;i<count;i++){
+    confettiPieces.push({
+      x: x + (Math.random()*40-20),
+      y: y + (Math.random()*40-20),
+      vx: (Math.random()*6-3),
+      vy: (Math.random()*-8)-2,
+      rot: Math.random()*360,
+      vr: (Math.random()*10-5),
+      w: 6 + Math.random()*10,
+      h: 10 + Math.random()*10,
+      col: `hsl(${Math.random()*60 + 330}, 90%, ${50 + Math.random()*10}%)`,
+      life: 90 + Math.random()*60
+    });
+  }
+}
+
+function animateConfetti(){
+  cctx.clearRect(0,0,conf.width, conf.height);
+  for(let i=confettiPieces.length-1;i>=0;i--){
+    const p = confettiPieces[i];
+    p.x += p.vx; p.y += p.vy;
+    p.vy += 0.24; // gravity
+    p.rot += p.vr;
+    p.life--;
+    cctx.save();
+    cctx.translate(p.x, p.y);
+    cctx.rotate(p.rot * Math.PI/180);
+    cctx.fillStyle = p.col;
+    cctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+    cctx.restore();
+    if(p.y > innerHeight + 60 || p.life <= 0) confettiPieces.splice(i,1);
+  }
+  requestAnimationFrame(animateConfetti);
+}
+animateConfetti();
+
+/* ---------------------------
+   Sequence: timed events
+   --------------------------- */
+const giftBtn = document.getElementById('giftBtn');
+const note = document.getElementById('note');
+const music = document.getElementById('music');
+const playMusic = document.getElementById('playMusic');
+
+let revealed = false;
+
+// when page loads, show fireworks a few seconds after title animation
+setTimeout(()=> {
+  startFireworksShow();
+  // stop after 6 seconds to keep it tasteful
+  setTimeout(()=> stopFireworksShow(), 6000);
+}, 1400);
+
+// make a gentle extra burst near the garden center to feel like a "bloom"
+setTimeout(()=> createFlowerBurst(6, garden.getBoundingClientRect().left + garden.clientWidth/2, garden.getBoundingClientRect().bottom - 10), 1000);
+
+// gift button handler: reveal secret note + confetti + fireworks flourish
+giftBtn.addEventListener('click', (e)=>{
+  if(revealed) return;
+  revealed = true;
+
+  // show note
+  note.classList.add('show');
+
+  // confetti burst at center of screen
+  confettiBurst(innerWidth/2, innerHeight/2, 160);
+
+  // bigger fireworks show
+  for(let i=0;i<10;i++){
+    setTimeout(()=> launchFirework(), i*150);
+  }
+
+  // gentle flower shower from the garden area
+  for(let i=0;i<28;i++){
+    setTimeout(()=> createFlowerBurst(1), i*140);
+  }
+
+  // small pulse on button to indicate opened
+  giftBtn.textContent = '💌 Opened';
+  giftBtn.disabled = true;
+});
+
+// music controls
+playMusic.addEventListener('click', ()=>{
+  if(music.paused){
+    music.play().catch(()=> {
+      // autoplay may be blocked; inform via button
+      playMusic.textContent = '🔊 Play';
+    });
+    playMusic.textContent = '🔈 Mute';
+  } else {
+    music.pause();
+    playMusic.textContent = '🔊 Play';
+  }
+});
+
+music.addEventListener('play', ()=> playMusic.textContent = '🔈 Mute');
+music.addEventListener('pause', ()=> playMusic.textContent = '🔊 Play');
+
+/* Accessibility: allow keyboard "Enter" to activate gift */
+giftBtn.addEventListener('keyup', (ev)=> {
+  if(ev.key === 'Enter' || ev.key === ' ') giftBtn.click();
+});
+
+/* small helper: create a flower burst at garden center (used above) */
+function createFlowerBurst(n=5, absoluteX=null, absoluteY=null){
+  // if absolute positions provided, use those coordinates
+  if(absoluteX !== null && absoluteY !== null){
+    createFlowerBurstAt(absoluteX, absoluteY, n);
+    return;
+  }
+  // otherwise use existing function defined earlier
+  for(let i=0;i<n;i++){
+    setTimeout(()=> {
+      const rect = garden.getBoundingClientRect();
+      createFlowerBurst(1, rect.left + rect.width * (0.2 + Math.random()*0.6), rect.bottom - 10);
+    }, i*80);
+  }
+}
+function createFlowerBurstAt(x, y, n=5){
+  for(let i=0;i<n;i++){
+    setTimeout(()=> {
+      createFlowerBurst(1, x + (Math.random()*40-20), y + (Math.random()*20-10));
+    }, i*60);
+  }
+}
+
+/* Start small floating petals from top-left for mood */
+(function floatingPetals(){
+  const count = 6;
+  for(let i=0;i<count;i++){
+    setTimeout(()=> {
+      const px = -40 + Math.random()*80;
+      const py = -20 + Math.random()*80;
+      createFloatingPetal(px, py, 4000 + Math.random()*6000);
+    }, i*700);
+  }
+})();
+function createFloatingPetal(x, y, dur=5000){
+  const p = document.createElement('div');
+  p.className = 'flower';
+  p.style.width = '36px';
+  p.style.height = '36px';
+  const svg = flowerSvgs[Math.floor(Math.random()*flowerSvgs.length)];
+  p.innerHTML = svg;
+  p.style.left = x + 'px';
+  p.style.top = y + 'px';
+  p.style.opacity = 0.9;
+  garden.appendChild(p);
+  // animate manually for a soft slow drift
+  const start = performance.now();
+  const startX = x;
+  const startY = y;
+  const driftX = 200 + Math.random()*120;
+  function step(t){
+    const ptime = (t - start) / dur;
+    if(ptime >= 1){ p.remove(); return; }
+    p.style.left = (startX + driftX * ptime) + 'px';
+    p.style.top = (startY + Math.sin(ptime*6+Math.random()*2)*18 - ptime*420) + 'px';
+    p.style.transform = `rotate(${ptime*720}deg) scale(${0.6 + 0.4*Math.max(0,1-ptime)})`;
+    requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+/* kick off a subtle periodic flower burst near center to keep it lively */
+setInterval(()=> {
+  if(Math.random() > 0.45) createFlowerBurst(1);
+}, 600);
+
+/* small accessibility: focus outline for keyboard users */
+document.addEventListener('keydown', (e)=>{
+  if(e.key === 'Tab') document.body.style.outlineStyle = 'auto';
+});
+</script>
+</body>
+</html>
